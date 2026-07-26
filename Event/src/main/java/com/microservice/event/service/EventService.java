@@ -96,9 +96,14 @@ public class EventService {
 	public ResponseEntity<String> updateSeats(Long id, int seats) {
 		Event event = eventRepo.findById(id).orElse(null);
 		if(event!=null) {
-			event.setSeatsAvailable(event.getSeatsAvailable()-seats);
-			eventRepo.save(event);
-			return new ResponseEntity<String>("Success",HttpStatus.OK);
+			int finalSeats=event.getSeatsAvailable()-seats;
+			if(finalSeats>=0) {
+				event.setSeatsAvailable(finalSeats);
+				eventRepo.save(event);
+				return new ResponseEntity<String>("Success",HttpStatus.OK);
+			}
+			else
+				return new ResponseEntity<String>("Only "+event.getSeatsAvailable()+" available." ,HttpStatus.CONFLICT);
 		}
 		else
 			return new ResponseEntity<String>("Event Not Found",HttpStatus.NOT_FOUND);

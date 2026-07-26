@@ -61,7 +61,7 @@ public class EventController {
 		return eventService.getSeats(id);
 	}
 	
-	@PutMapping("seatsUpdate/{id}/{seats}")
+	@GetMapping("seatsUpdate/{id}/{seats}")
 	public ResponseEntity<String> updateSeats(@PathVariable Long id,@PathVariable int seats)
 	{
 		return eventService.updateSeats(id,seats);

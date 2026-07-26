@@ -7,7 +7,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 
+import com.microservice.booking.DTO.EventDTO;
 import com.microservice.booking.entity.Booking;
 import com.microservice.booking.repo.BookingRepo;
 
@@ -18,18 +20,21 @@ public class BookingService {
 	private BookingRepo bookingRepo;
 	
 	public ResponseEntity<String> createOrder(Booking booking) {
-		
-		String event=null;
-		//Event event = eventRepo.findById(booking.getEvent().getId()).orElse(null);
+
+		ResponseEntity<EventDTO> resEntity = new RestTemplate().getForEntity("http://localhost:8082/event/inventory/"+booking.getEvent(),EventDTO.class);
+		EventDTO event=resEntity.getBody();
 		if(event!=null) {
-			if(event=="")// .getSeatsAvailable()
-			{
-				//event.setSeatsAvailable(event.getSeatsAvailable()-booking.getTotalBookings());
-				//eventService.updateEvent(event);
-				booking.setBookingDate(new Date());
-				bookingRepo.save(booking);
+			if(event.getNoSeats()>0) {
+				ResponseEntity<String> setEntity = new RestTemplate()
+						.getForEntity("http://localhost:8082/event/seatsUpdate/"+booking.getEvent()+"/"+booking.getTotalBookings(),String.class);
+				if( HttpStatus.OK.equals(setEntity.getStatusCode())) {
+					booking.setBookingDate(new Date());
+					bookingRepo.save(booking);
 			
-				return new ResponseEntity<String>("Booking Confirmed",HttpStatus.CREATED);
+					return new ResponseEntity<String>("Booking Confirmed",HttpStatus.CREATED);
+				}
+				else
+					return new ResponseEntity<String>(setEntity.getBody(),setEntity.getStatusCode());
 			}else {
 				booking.setStatus(Booking.BookingStatus.FAILED);
 				bookingRepo.save(booking);
