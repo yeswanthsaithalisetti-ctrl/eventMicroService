@@ -1,4 +1,4 @@
-package com.microservice.event.DTO;
+package com.Microservice.Payment.DTO;
 
 import lombok.Data;
 import lombok.NoArgsConstructor;

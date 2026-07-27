@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import com.microservice.user.UserDTO;
 import com.microservice.user.Entity.User;
 import com.microservice.user.Repo.UserRepo;
 
@@ -58,6 +59,19 @@ public class UserService {
 		User user = userRepo.findById(id).orElse(null);
 		if(user!=null)
 			return new ResponseEntity<User>(user,HttpStatus.OK);
+		else
+			return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+	}
+
+	public ResponseEntity<UserDTO> getDetails(Long id) {
+		User user = userRepo.findById(id).orElse(null);
+		if(user!=null) {
+			UserDTO details = new UserDTO();
+			details.setUserId(user.getId());
+			details.setUserName(user.getName());
+			details.setEmail(user.getEmail());
+			return new ResponseEntity<UserDTO>(details,HttpStatus.OK);
+		}
 		else
 			return new ResponseEntity<>(HttpStatus.NOT_FOUND);
 	}

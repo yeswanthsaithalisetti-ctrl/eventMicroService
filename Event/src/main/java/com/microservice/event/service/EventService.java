@@ -86,6 +86,7 @@ public class EventService {
 			EventDTO response = new EventDTO();
 			response.setEventId(event.getId());
 			response.setNoSeats(event.getSeatsAvailable());
+			response.setTitle(event.getTitle());
 			return new ResponseEntity<EventDTO>(response,HttpStatus.OK);
 		}
 		else

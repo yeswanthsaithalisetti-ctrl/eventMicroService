@@ -9,8 +9,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import com.microservice.booking.DTO.BookingDTO;
 import com.microservice.booking.DTO.EventDTO;
 import com.microservice.booking.entity.Booking;
+import com.microservice.booking.entity.Booking.BookingStatus;
 import com.microservice.booking.repo.BookingRepo;
 
 @Service
@@ -83,6 +85,32 @@ public class BookingService {
 		bookingRepo.deleteById(id);
 		
 		return new ResponseEntity<String>("Booking Deleted",HttpStatus.OK);
+	}
+
+	public ResponseEntity<BookingDTO> getAmount(Long id) {
+		Booking booking=bookingRepo.findById(id).orElse(null);
+		if(booking!=null) {
+			BookingDTO amount = new BookingDTO();
+			amount.setBookingId(booking.getId());
+			amount.setAmount(booking.getTotalBookings());
+			amount.setEvent(booking.getEvent());
+			amount.setUser(booking.getUser());
+			amount.setStatus(booking.getStatus());
+			return new ResponseEntity<BookingDTO>(amount,HttpStatus.OK);
+		}
+		else
+			return new ResponseEntity<BookingDTO>(HttpStatus.NOT_FOUND);
+	}
+
+	public ResponseEntity<String> status(Long id, String status) {
+		Booking booking = bookingRepo.findById(id).orElse(null);
+		if(booking!=null) {
+			booking.setStatus(BookingStatus.valueOf(status));
+			bookingRepo.save(booking);
+			return new ResponseEntity<String>("Booking Updated",HttpStatus.OK);
+		}
+		else
+			return new ResponseEntity<String>("Booking not found",HttpStatus.NOT_FOUND);
 	}
 	
 	

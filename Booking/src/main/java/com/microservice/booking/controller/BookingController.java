@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.microservice.booking.DTO.BookingDTO;
 import com.microservice.booking.entity.Booking;
 import com.microservice.booking.service.BookingService;
 
@@ -53,4 +54,16 @@ public class BookingController {
 	public ResponseEntity<String> deleteBooking(@PathVariable Long id){
 		return bookingService.deleteBooking(id);
 	}
+	
+	@GetMapping("details/{id}")
+	public ResponseEntity<BookingDTO> getDetails(@PathVariable Long id){
+		return  bookingService.getAmount(id);
+	}
+	
+	@GetMapping("updateStatus/{id}/{status}")
+	public ResponseEntity<String> updateStatus(@PathVariable Long id,@PathVariable String status){
+		return bookingService.status(id,status);
+	}
 }
+
+
