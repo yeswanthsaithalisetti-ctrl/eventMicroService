@@ -8,7 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import com.microservice.user.UserDTO;
+import com.microservice.user.DTO.UserDTO;
 import com.microservice.user.Entity.User;
 import com.microservice.user.Repo.UserRepo;
 

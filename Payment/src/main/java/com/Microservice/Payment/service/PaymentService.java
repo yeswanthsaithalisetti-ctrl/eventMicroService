@@ -1,11 +1,15 @@
 package com.Microservice.Payment.service;
 
+import java.net.URI;
 import java.util.Date;
+import java.util.List;
 
 import org.json.JSONObject;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cloud.client.ServiceInstance;
+import org.springframework.cloud.client.discovery.DiscoveryClient;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -43,10 +47,16 @@ public class PaymentService {
 
 	@Autowired
 	private RabbitTemplate rabbitTemplate;
+	
+	@Autowired
+	private DiscoveryClient client;
 
 	public ResponseEntity<String> createPayment(Long bookingId) {
 
-		BookingDTO booking = new RestTemplate().getForEntity("http://localhost:8083/order/details/"+bookingId, BookingDTO.class).getBody();
+		List<ServiceInstance> bInstances= client.getInstances("BOOKING");
+		URI bookingUri = bInstances.get(0).getUri();  
+		
+		BookingDTO booking = new RestTemplate().getForEntity(bookingUri+"/order/details/"+bookingId, BookingDTO.class).getBody();
 
 		if (booking != null) {
 			int amount = (int) (booking.getAmount() * 100);
@@ -79,10 +89,13 @@ public class PaymentService {
 
 	public ResponseEntity<String> verify(PaymentDTO paymentDTO) {
 
+		List<ServiceInstance> bInstances= client.getInstances("BOOKING");
+		URI bookingUri = bInstances.get(0).getUri(); 
+		
 		String sign = paymentDTO.getRazorpayOrderId() + "|" + paymentDTO.getRazorpayPaymentId();
 
 		Payment payment = paymentRepo.findByRazorpayOrderId(paymentDTO.getRazorpayOrderId());
-		BookingDTO booking = new RestTemplate().getForEntity("http://localhost:8083/order/details/"+paymentDTO.getBookingId(), BookingDTO.class)
+		BookingDTO booking = new RestTemplate().getForEntity(bookingUri+"/order/details/"+paymentDTO.getBookingId(), BookingDTO.class)
 				.getBody();
 
 		String genSign = "";
@@ -93,14 +106,19 @@ public class PaymentService {
 		}
 
 		if (genSign.equalsIgnoreCase(paymentDTO.getRazorpaySignature())) {
+			
+			List<ServiceInstance> uInstances= client.getInstances("USER");
+			URI userUri = uInstances.get(0).getUri(); 
+			List<ServiceInstance> eInstances= client.getInstances("EVENT");
+			URI eventUri = eInstances.get(0).getUri(); 
 			payment.setStatus(Payment.PaymentStatus.SUCCESS);
 			payment.setRazorpayPaymentId(paymentDTO.getRazorpayPaymentId());
 			payment.setRazorpaySignature(genSign);
 
 			booking.setStatus("CONFIRMED");
-			UserDTO user = new RestTemplate().getForEntity("http://localhost:8085/user/getdetails/"+booking.getUser(),UserDTO.class)
+			UserDTO user = new RestTemplate().getForEntity(userUri+"/user/getdetails/"+booking.getUser(),UserDTO.class)
 					.getBody();
-			EventDTO event = new RestTemplate().getForEntity("http://localhost:8082/event/inventory/"+booking.getEvent(),EventDTO.class)
+			EventDTO event = new RestTemplate().getForEntity(eventUri+"/event/inventory/"+booking.getEvent(),EventDTO.class)
 					.getBody();
 			EmailDTO email = new EmailDTO();
 			email.setBookingId(booking.getBookingId());
@@ -112,7 +130,7 @@ public class PaymentService {
 			rabbitTemplate.convertAndSend(RabbitMQConfig.emailExchange, RabbitMQConfig.emailRoutingKey, email);
 
 			paymentRepo.save(payment);
-			String res=new RestTemplate().getForEntity("http://localhost:8083/order/updateStatus/"+booking.getBookingId()+"/"+booking.getStatus(), String.class)
+			String res=new RestTemplate().getForEntity(bookingUri+"/order/updateStatus/"+booking.getBookingId()+"/"+booking.getStatus(), String.class)
 			.getBody();
 
 			return new ResponseEntity<String>("Booking Confirmed", HttpStatus.OK);
@@ -120,7 +138,7 @@ public class PaymentService {
 			payment.setStatus(Payment.PaymentStatus.FAILED);
 			booking.setStatus("FAILED");
 			paymentRepo.save(payment);
-			String res=new RestTemplate().getForEntity("http://localhost:8083/order/updateStatus/"+booking.getBookingId()+"/"+booking.getStatus(), String.class)
+			String res=new RestTemplate().getForEntity(bookingUri+"/order/updateStatus/"+booking.getBookingId()+"/"+booking.getStatus(), String.class)
 					.getBody();
 			return new ResponseEntity<String>("Booking Failed", HttpStatus.BAD_REQUEST);
 		}

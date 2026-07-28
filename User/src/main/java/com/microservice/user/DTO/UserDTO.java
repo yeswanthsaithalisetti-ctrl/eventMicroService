@@ -1,4 +1,4 @@
-package com.microservice.user;
+package com.microservice.user.DTO;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

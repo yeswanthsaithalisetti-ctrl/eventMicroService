@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.microservice.user.UserDTO;
+import com.microservice.user.DTO.UserDTO;
 import com.microservice.user.Entity.User;
 import com.microservice.user.Service.UserService;
 

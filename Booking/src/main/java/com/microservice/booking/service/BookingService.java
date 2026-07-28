@@ -1,9 +1,12 @@
 package com.microservice.booking.service;
 
+import java.net.URI;
 import java.util.Date;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cloud.client.ServiceInstance;
+import org.springframework.cloud.client.discovery.DiscoveryClient;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -21,14 +24,19 @@ public class BookingService {
 	@Autowired
 	private BookingRepo bookingRepo;
 	
+	@Autowired
+	private DiscoveryClient client;
+	
 	public ResponseEntity<String> createOrder(Booking booking) {
 
-		ResponseEntity<EventDTO> resEntity = new RestTemplate().getForEntity("http://localhost:8082/event/inventory/"+booking.getEvent(),EventDTO.class);
+		List<ServiceInstance> instances = client.getInstances("EVENT");
+		URI eventUri = instances.get(0).getUri();
+		ResponseEntity<EventDTO> resEntity = new RestTemplate().getForEntity(eventUri+"/event/inventory/"+booking.getEvent(),EventDTO.class);
 		EventDTO event=resEntity.getBody();
 		if(event!=null) {
 			if(event.getNoSeats()>0) {
 				ResponseEntity<String> setEntity = new RestTemplate()
-						.getForEntity("http://localhost:8082/event/seatsUpdate/"+booking.getEvent()+"/"+booking.getTotalBookings(),String.class);
+						.getForEntity(eventUri+"/event/seatsUpdate/"+booking.getEvent()+"/"+booking.getTotalBookings(),String.class);
 				if( HttpStatus.OK.equals(setEntity.getStatusCode())) {
 					booking.setBookingDate(new Date());
 					bookingRepo.save(booking);
@@ -92,7 +100,7 @@ public class BookingService {
 		if(booking!=null) {
 			BookingDTO amount = new BookingDTO();
 			amount.setBookingId(booking.getId());
-			amount.setAmount(booking.getTotalBookings());
+			amount.setAmount(booking.getTotalAmount());
 			amount.setEvent(booking.getEvent());
 			amount.setUser(booking.getUser());
 			amount.setStatus(booking.getStatus());
