@@ -30,6 +30,8 @@ import com.razorpay.Order;
 import com.razorpay.RazorpayClient;
 import com.razorpay.RazorpayException;
 
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+
 @Service
 public class PaymentService {
 
@@ -87,6 +89,7 @@ public class PaymentService {
 			return new ResponseEntity<String>(HttpStatus.NOT_FOUND);
 	}
 
+	@CircuitBreaker(name="eventService", fallbackMethod="verifyFallback")
 	public ResponseEntity<String> verify(PaymentDTO paymentDTO) {
 
 		List<ServiceInstance> bInstances= client.getInstances("BOOKING");
@@ -142,6 +145,10 @@ public class PaymentService {
 					.getBody();
 			return new ResponseEntity<String>("Booking Failed", HttpStatus.BAD_REQUEST);
 		}
+	}
+	
+	public ResponseEntity<String> verifyFallback(PaymentDTO paymentDTO,Throwable t) {
+		return new ResponseEntity<String>("Exception occured", HttpStatus.OK);
 	}
 
 	public ResponseEntity<String> getStatus(Long id) {

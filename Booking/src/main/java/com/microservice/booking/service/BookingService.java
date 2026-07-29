@@ -27,16 +27,18 @@ public class BookingService {
 	@Autowired
 	private DiscoveryClient client;
 	
+	@Autowired
+	private RestTemplate template;
+	
 	public ResponseEntity<String> createOrder(Booking booking) {
 
-		List<ServiceInstance> instances = client.getInstances("EVENT");
-		URI eventUri = instances.get(0).getUri();
-		ResponseEntity<EventDTO> resEntity = new RestTemplate().getForEntity(eventUri+"/event/inventory/"+booking.getEvent(),EventDTO.class);
+		//List<ServiceInstance> instances = client.getInstances("EVENT");
+		//URI eventUri = instances.get(0).getUri();
+		ResponseEntity<EventDTO> resEntity = template.getForEntity("http://EVENT/event/inventory/"+booking.getEvent(),EventDTO.class);
 		EventDTO event=resEntity.getBody();
 		if(event!=null) {
 			if(event.getNoSeats()>0) {
-				ResponseEntity<String> setEntity = new RestTemplate()
-						.getForEntity(eventUri+"/event/seatsUpdate/"+booking.getEvent()+"/"+booking.getTotalBookings(),String.class);
+				ResponseEntity<String> setEntity = template.getForEntity("http://EVENT/event/seatsUpdate/"+booking.getEvent()+"/"+booking.getTotalBookings(),String.class);
 				if( HttpStatus.OK.equals(setEntity.getStatusCode())) {
 					booking.setBookingDate(new Date());
 					bookingRepo.save(booking);
